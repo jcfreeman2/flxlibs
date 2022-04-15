@@ -13,6 +13,7 @@ moo.otypes.load_types('readoutlibs/readoutconfig.jsonnet')
 moo.otypes.load_types('readoutlibs/recorderconfig.jsonnet')
 moo.otypes.load_types('flxlibs/felixcardreader.jsonnet')
 moo.otypes.load_types('flxlibs/felixcardcontroller.jsonnet')
+moo.otypes.load_types('dtpctrllibs/dtpcontroller.jsonnet')
 
 # Import new types
 import dunedaq.cmdlib.cmd as basecmd # AddressedCmd, 
@@ -23,6 +24,7 @@ import dunedaq.readoutlibs.readoutconfig as rconf
 import dunedaq.readoutlibs.recorderconfig as bfs
 import dunedaq.flxlibs.felixcardreader as flxcr
 import dunedaq.flxlibs.felixcardcontroller as flxcc
+import dunedaq.dtpctrllibs.dtpcontroller as dtpcontroller
 import dunedaq.networkmanager.nwmgr as nwmgr
 
 from appfwk.utils import mcmd, mrccmd, mspec
@@ -80,7 +82,12 @@ def generate(
         EMULATOR_MODE = False,
         ENABLE_SOFTWARE_TPG=False,
         RUN_NUMBER = 333,
-        DATA_FILE="./frames.bin"
+        DATA_FILE="./frames.bin",
+        CONNECTIONS_FILE="${DTPCONTROLS_SHARE}/config/dtp_connections.xml",
+        DTP_DEVICE_NAME="flx-0-p2-hf",
+        DATA_SOURCE="int",
+        UHAL_LOG_LEVEL="debug",
+        OUTPUT_PATH=".",
     ):
 
     link_mask = parse_linkmask(FELIX_ELINK_MASK, NUMBER_OF_DATA_PRODUCERS+NUMBER_OF_TP_PRODUCERS)
@@ -186,6 +193,8 @@ def generate(
                 mspec(f"fragment_consumer", "FragmentConsumer", [
                                             app.QueueInfo(name="input_queue", inst=f"data_fragments_q", dir="input")
                                             ])
+        ] + [
+                mspec("dtpctrl", "DTPController", [])
         ]
 
     
@@ -256,6 +265,13 @@ def generate(
                 ("flxcardctrl_1",flxcc.Conf(
                             card_id=CARDID,
                             logical_unit=1)),
+            ] + [
+                ("dtpctrl", dtpcontroller.ConfParams(
+                        connections_file=CONNECTIONS_FILE,
+                        device=DTP_DEVICE_NAME,
+                        source=DATA_SOURCE,
+                        uhal_log_level=UHAL_LOG_LEVEL,
+                        )),
             ] + [
                 (f"datahandler_{idx}", rconf.Conf(
                         readoutmodelconf= rconf.ReadoutModelConf(
@@ -399,6 +415,7 @@ def generate(
             ("datahandler_.*", startpars),
             ("flxcard_.*", startpars),
             ("flxcardctrl_.*", startpars),
+            ("dtpctrl", None),
             ("data_recorder_.*", startpars),
             ("timesync_consumer", startpars),
             ("fragment_consumer", startpars)
@@ -411,6 +428,7 @@ def generate(
     stopcmd = mrccmd("stop", "RUNNING", "CONFIGURED", [
             ("flxcard_.*", None),
             ("flxcardctrl_.*", None),
+            ("dtpctrl", None),
             ("datahandler_.*", None),
             ("data_recorder_.*", None),
             ("timesync_consumer", None),
@@ -427,8 +445,15 @@ def generate(
     jstr = json.dumps(scrapcmd.pod(), indent=4, sort_keys=True)
     print("="*80+"\nScrap\n\n", jstr)
 
+    resetcmd = mrccmd("reset", "CONFIGURED", "CONFIGURED", [
+            ("dtpctrl", None),
+        ])
+
+    jstr = json.dumps(resetcmd.pod(), indent=4, sort_keys=True)
+    print("="*80+"\nReset\n\n", jstr)
+
     # Create a list of commands
-    cmd_seq = [initcmd, confcmd, startcmd, stopcmd, scrapcmd]
+    cmd_seq = [initcmd, confcmd, startcmd, stopcmd, scrapcmd, resetcmd]
 
     record_cmd = mrccmd("record", "RUNNING", "RUNNING", [
         ("datahandler_.*", rconf.RecordingParams(
@@ -524,8 +549,14 @@ if __name__ == '__main__':
     @click.option('-g', '--enable-software-tpg', is_flag=True)
     @click.option('-r', '--run-number', default=333)
     @click.option('-d', '--data-file', type=click.Path(), default='./frames.bin')
+    # dtpctrl options
+    @click.option('-c', '--connections-file', default="${DTPCONTROLS_SHARE}/config/dtp_connections.xml")
+    @click.option('-D', '--dtp-device-name', default="flx-0-p2-hf")
+    @click.option('-u', '--uhal-log-level', default="notice")
+    @click.option('-S', '--source-data', default="int")
+    @click.option('-o', '--output-path', type=click.Path(), default='.')
     @click.argument('json_file', type=click.Path(), default='flx_readout.json')
-    def cli(frontend_type, number_of_data_producers, number_of_tp_producers, felix_elink_mask, data_rate_slowdown_factor, emulator_mode, enable_software_tpg, run_number, data_file, json_file):
+    def cli(frontend_type, number_of_data_producers, number_of_tp_producers, felix_elink_mask, data_rate_slowdown_factor, emulator_mode, enable_software_tpg, run_number, data_file, connections_file, dtp_device_name, uhal_log_level, source_data, output_path, json_file):
         """
           JSON_FILE: Input raw data file.
           JSON_FILE: Output json configuration file.
@@ -542,6 +573,11 @@ if __name__ == '__main__':
                     ENABLE_SOFTWARE_TPG = enable_software_tpg,
                     RUN_NUMBER = run_number,
                     DATA_FILE = data_file,
+                    CONNECTIONS_FILE=connections_file,
+                    DTP_DEVICE_NAME = dtp_device_name,
+                    DATA_SOURCE = source_data,
+                    UHAL_LOG_LEVEL = uhal_log_level,
+                    OUTPUT_PATH = output_path,
                 ))
 
         print(f"'{json_file}' generation completed.")
