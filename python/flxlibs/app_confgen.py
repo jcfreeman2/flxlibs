@@ -84,7 +84,6 @@ def generate(
         RUN_NUMBER = 333,
         DATA_FILE="./frames.bin",
         CONNECTIONS_FILE="${DTPCONTROLS_SHARE}/config/dtp_connections.xml",
-        DTP_DEVICE_NAME="flx-0-p2-hf",
         DATA_SOURCE="int",
         UHAL_LOG_LEVEL="debug",
         OUTPUT_PATH=".",
@@ -193,8 +192,6 @@ def generate(
                 mspec(f"fragment_consumer", "FragmentConsumer", [
                                             app.QueueInfo(name="input_queue", inst=f"data_fragments_q", dir="input")
                                             ])
-        ] + [
-                mspec("dtpctrl", "DTPController", [])
         ]
 
     
@@ -210,6 +207,8 @@ def generate(
                         ]))
         mod_specs.append(mspec("flxcardctrl_0", "FelixCardController", [
                         ]))
+        mod_specs.append(mspec("dtpctrl_0", "DTPController", [
+                        ]))
     if NUMBER_OF_DATA_PRODUCERS > 5 or n_links_1 > 0:
         mod_specs.append(mspec("flxcard_1", "FelixCardReader", [
                         app.QueueInfo(name=f"output_{idx}", inst=f"{FRONTEND_TYPE}_link_{idx}", dir="output")
@@ -221,6 +220,8 @@ def generate(
                         app.QueueInfo(name="errored_chunks", inst="errored_chunks_q", dir="output")
                         ]))
         mod_specs.append(mspec("flxcardctrl_1", "FelixCardController", [
+                        ]))
+        mod_specs.append(mspec("dtpctrl_1", "DTPController", [
                         ]))
 
     nw_specs = [nwmgr.Connection(name="timesync", topics=["Timesync"], address="tcp://127.0.0.1:6000")]
@@ -266,9 +267,16 @@ def generate(
                             card_id=CARDID,
                             logical_unit=1)),
             ] + [
-                ("dtpctrl", dtpcontroller.ConfParams(
+                ("dtpctrl_0", dtpcontroller.ConfParams(
                         connections_file=CONNECTIONS_FILE,
-                        device=DTP_DEVICE_NAME,
+                        device="flx-0-p2-hf",
+                        source=DATA_SOURCE,
+                        uhal_log_level=UHAL_LOG_LEVEL,
+                        )),
+            ] + [
+                ("dtpctrl_1", dtpcontroller.ConfParams(
+                        connections_file=CONNECTIONS_FILE,
+                        device="flx-1-p2-hf",
                         source=DATA_SOURCE,
                         uhal_log_level=UHAL_LOG_LEVEL,
                         )),
@@ -551,12 +559,11 @@ if __name__ == '__main__':
     @click.option('-d', '--data-file', type=click.Path(), default='./frames.bin')
     # dtpctrl options
     @click.option('-c', '--connections-file', default="${DTPCONTROLS_SHARE}/config/dtp_connections.xml")
-    @click.option('-D', '--dtp-device-name', default="flx-0-p2-hf")
     @click.option('-u', '--uhal-log-level', default="notice")
     @click.option('-S', '--source-data', default="int")
     @click.option('-o', '--output-path', type=click.Path(), default='.')
     @click.argument('json_file', type=click.Path(), default='flx_readout.json')
-    def cli(frontend_type, number_of_data_producers, number_of_tp_producers, felix_elink_mask, data_rate_slowdown_factor, emulator_mode, enable_software_tpg, run_number, data_file, connections_file, dtp_device_name, uhal_log_level, source_data, output_path, json_file):
+    def cli(frontend_type, number_of_data_producers, number_of_tp_producers, felix_elink_mask, data_rate_slowdown_factor, emulator_mode, enable_software_tpg, run_number, data_file, connections_file, uhal_log_level, source_data, output_path, json_file):
         """
           JSON_FILE: Input raw data file.
           JSON_FILE: Output json configuration file.
@@ -574,7 +581,6 @@ if __name__ == '__main__':
                     RUN_NUMBER = run_number,
                     DATA_FILE = data_file,
                     CONNECTIONS_FILE=connections_file,
-                    DTP_DEVICE_NAME = dtp_device_name,
                     DATA_SOURCE = source_data,
                     UHAL_LOG_LEVEL = uhal_log_level,
                     OUTPUT_PATH = output_path,
