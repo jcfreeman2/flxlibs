@@ -423,7 +423,7 @@ def generate(
             ("datahandler_.*", startpars),
             ("flxcard_.*", startpars),
             ("flxcardctrl_.*", startpars),
-            ("dtpctrl", None),
+            ("dtpctrl_.*", None),
             ("data_recorder_.*", startpars),
             ("timesync_consumer", startpars),
             ("fragment_consumer", startpars)
@@ -436,7 +436,7 @@ def generate(
     stopcmd = mrccmd("stop", "RUNNING", "CONFIGURED", [
             ("flxcard_.*", None),
             ("flxcardctrl_.*", None),
-            ("dtpctrl", None),
+            ("dtpctrl_.*", None),
             ("datahandler_.*", None),
             ("data_recorder_.*", None),
             ("timesync_consumer", None),
@@ -454,7 +454,7 @@ def generate(
     print("="*80+"\nScrap\n\n", jstr)
 
     resetcmd = mrccmd("reset", "CONFIGURED", "CONFIGURED", [
-            ("dtpctrl", None),
+            ("dtpctrl_.*", None),
         ])
 
     jstr = json.dumps(resetcmd.pod(), indent=4, sort_keys=True)
