@@ -243,178 +243,181 @@ def generate(
     lb_remiander = lb_size % 4096
     lb_size -= lb_remiander # ensure latency buffer size is always a multiple of 4096, so should be 4k aligned
 
-    confcmd = mrccmd("conf", "INITIAL", "CONFIGURED", [
-                ("flxcard_0",flxcr.Conf(card_id=CARDID,
-                            logical_unit=0,
-                            dma_id=0,
-                            chunk_trailer_size= 32,
-                            dma_block_size_kb= 4,
-                            dma_memory_size_gb= 4,
-                            numa_id=0,
-                            links_enabled=link_mask[0])),
-                ("flxcard_1",flxcr.Conf(card_id=CARDID,
-                            logical_unit=1,
-                            dma_id=0,
-                            chunk_trailer_size= 32,
-                            dma_block_size_kb= 4,
-                            dma_memory_size_gb= 4,
-                            numa_id=0,
-                            links_enabled=link_mask[1])),
-                ("flxcardctrl_0",flxcc.Conf(
-                            card_id=CARDID,
-                            logical_unit=0)),
-                ("flxcardctrl_1",flxcc.Conf(
-                            card_id=CARDID,
-                            logical_unit=1)),
-            ] + [
-                ("dtpctrl_0", dtpcontroller.ConfParams(
-                        connections_file=CONNECTIONS_FILE,
-                        device="flx-0-p2-hf",
-                        source=DATA_SOURCE,
-                        uhal_log_level=UHAL_LOG_LEVEL,
-                        )),
-            ] + [
-                ("dtpctrl_1", dtpcontroller.ConfParams(
-                        connections_file=CONNECTIONS_FILE,
-                        device="flx-1-p2-hf",
-                        source=DATA_SOURCE,
-                        uhal_log_level=UHAL_LOG_LEVEL,
-                        )),
-            ] + [
-                (f"datahandler_{idx}", rconf.Conf(
-                        readoutmodelconf= rconf.ReadoutModelConf(
-                            source_queue_timeout_ms= QUEUE_POP_WAIT_MS,
-                            fake_trigger_flag=1,
-                            timesync_connection_name="timesync",
-                            region_id = 0,
-                            element_id = idx,
-                        ),
-                        latencybufferconf= rconf.LatencyBufferConf(
-                            latency_buffer_alignment_size = 4096,
-                            latency_buffer_size = lb_size,
-                            region_id = 0,
-                            element_id = idx,
-                        ),
-                        rawdataprocessorconf= rconf.RawDataProcessorConf(
-                            region_id = 0,
-                            element_id = idx,
-                            enable_software_tpg = ENABLE_SOFTWARE_TPG,
-                            emulator_mode = EMULATOR_MODE,
-                        ),
-                        requesthandlerconf= rconf.RequestHandlerConf(
-                            latency_buffer_size = lb_size,
-                            pop_limit_pct = 0.8,
-                            pop_size_pct = 0.1,
-                            region_id = 0,
-                            element_id = idx,
-                            output_file = f"raw_output_{idx}.out",
-                            stream_buffer_size = 8388608,
-                            enable_raw_recording = True
-                        )
-                        )) for idx in range(min(5, n_links_0-n_tp_link_0))
-            ] + [
-                (f"datahandler_{idx}", rconf.Conf(
-                        readoutmodelconf= rconf.ReadoutModelConf(
-                            source_queue_timeout_ms= QUEUE_POP_WAIT_MS,
-                            fake_trigger_flag=1,
-                            timesync_connection_name="timesync",
-                            region_id = 0,
-                            element_id = idx,
-                        ),
-                        latencybufferconf= rconf.LatencyBufferConf(
-                            latency_buffer_alignment_size = 4096,
-                            latency_buffer_size = lb_size,
-                            region_id = 0,
-                            element_id = idx,
-                        ),
-                        rawdataprocessorconf= rconf.RawDataProcessorConf(
-                            region_id = 0,
-                            element_id = idx,
-                            enable_software_tpg = ENABLE_SOFTWARE_TPG,
-                            emulator_mode = EMULATOR_MODE,
-                        ),
-                        requesthandlerconf= rconf.RequestHandlerConf(
-                            latency_buffer_size = lb_size,
-                            pop_limit_pct = 0.8,
-                            pop_size_pct = 0.1,
-                            region_id = 0,
-                            element_id = idx,
-                            output_file = f"raw_output_{idx}.out",
-                            stream_buffer_size = 8388608,
-                            enable_raw_recording = True
-                        )
-                        )) for idx in range(6, 6+n_links_1-n_tp_link_1)
-            ] + [
-                (f"datahandler_{idx}", rconf.Conf(
-                        readoutmodelconf= rconf.ReadoutModelConf(
-                            source_queue_timeout_ms= QUEUE_POP_WAIT_MS,
-                            fake_trigger_flag=1,
-                            timesync_connection_name="timesync",
-                            region_id = 0,
-                            element_id = idx,
-                        ),
-                        latencybufferconf= rconf.LatencyBufferConf(
-                            latency_buffer_alignment_size = 4096,
-                            latency_buffer_size = lb_size,
-                            region_id = 0,
-                            element_id = idx,
-                        ),
-                        rawdataprocessorconf= rconf.RawDataProcessorConf(
-                            region_id = 0,
-                            element_id = idx,
-                            enable_software_tpg = False,
-                            emulator_mode = EMULATOR_MODE,
-                        ),
-                        requesthandlerconf= rconf.RequestHandlerConf(
-                            latency_buffer_size = lb_size,
-                            pop_limit_pct = 0.8,
-                            pop_size_pct = 0.1,
-                            region_id = 0,
-                            element_id = idx,
-                            output_file = f"raw_output_{idx}.out",
-                            stream_buffer_size = 8388608,
-                            enable_raw_recording = True
-                        )
-                        )) for idx in range(n_links_0-1, n_links_0) if 5 in link_mask[0]
-            ] + [
-                (f"datahandler_{idx}", rconf.Conf(
-                        readoutmodelconf= rconf.ReadoutModelConf(
-                            source_queue_timeout_ms= QUEUE_POP_WAIT_MS,
-                            fake_trigger_flag=1,
-                            timesync_connection_name="timesync",
-                            region_id = 0,
-                            element_id = idx,
-                        ),
-                        latencybufferconf= rconf.LatencyBufferConf(
-                            latency_buffer_alignment_size = 4096,
-                            latency_buffer_size = lb_size,
-                            region_id = 0,
-                            element_id = idx,
-                        ),
-                        rawdataprocessorconf= rconf.RawDataProcessorConf(
-                            region_id = 0,
-                            element_id = idx,
-                            enable_software_tpg = False,
-                            emulator_mode = EMULATOR_MODE,
-                        ),
-                        requesthandlerconf= rconf.RequestHandlerConf(
-                            latency_buffer_size = lb_size,
-                            pop_limit_pct = 0.8,
-                            pop_size_pct = 0.1,
-                            region_id = 0,
-                            element_id = idx,
-                            output_file = f"raw_output_{idx}.out",
-                            stream_buffer_size = 8388608,
-                            enable_raw_recording = True
-                        )
-                        )) for idx in range(5+n_links_1, 5+n_links_1+1) if 5 in link_mask[1]
-            ] + [
-                (f"data_recorder_{idx}", bfs.Conf(
-                        output_file = f"output_{idx}.out",
-                        stream_buffer_size = 8388608
-                        )) for idx in range(NUMBER_OF_DATA_PRODUCERS)
-            ])
-    
+    conf_specs = []
+    if n_links_0 > 0:
+        conf_specs += [
+                    ("flxcard_0",flxcr.Conf(card_id=CARDID,
+                                logical_unit=0,
+                                dma_id=0,
+                                chunk_trailer_size= 32,
+                                dma_block_size_kb= 4,
+                                dma_memory_size_gb= 4,
+                                numa_id=0,
+                                links_enabled=link_mask[0])),
+                    ("flxcardctrl_0",flxcc.Conf(
+                                card_id=CARDID,
+                                logical_unit=0)),
+                    ("dtpctrl_0", dtpcontroller.ConfParams(
+                            connections_file=CONNECTIONS_FILE,
+                            device="flx-0-p2-hf",
+                            source=DATA_SOURCE,
+                            uhal_log_level=UHAL_LOG_LEVEL,
+                            ))
+                ] + [
+                    (f"datahandler_{idx}", rconf.Conf(
+                            readoutmodelconf= rconf.ReadoutModelConf(
+                                source_queue_timeout_ms= QUEUE_POP_WAIT_MS,
+                                fake_trigger_flag=1,
+                                timesync_connection_name="timesync",
+                                region_id = 0,
+                                element_id = idx,
+                            ),
+                            latencybufferconf= rconf.LatencyBufferConf(
+                                latency_buffer_alignment_size = 4096,
+                                latency_buffer_size = lb_size,
+                                region_id = 0,
+                                element_id = idx,
+                            ),
+                            rawdataprocessorconf= rconf.RawDataProcessorConf(
+                                region_id = 0,
+                                element_id = idx,
+                                enable_software_tpg = ENABLE_SOFTWARE_TPG,
+                                emulator_mode = EMULATOR_MODE,
+                            ),
+                            requesthandlerconf= rconf.RequestHandlerConf(
+                                latency_buffer_size = lb_size,
+                                pop_limit_pct = 0.8,
+                                pop_size_pct = 0.1,
+                                region_id = 0,
+                                element_id = idx,
+                                output_file = f"raw_output_{idx}.out",
+                                stream_buffer_size = 8388608,
+                                enable_raw_recording = True
+                            )
+                            )) for idx in range(min(5, n_links_0-n_tp_link_0))
+                ] + [
+                    (f"datahandler_{idx}", rconf.Conf(
+                            readoutmodelconf= rconf.ReadoutModelConf(
+                                source_queue_timeout_ms= QUEUE_POP_WAIT_MS,
+                                fake_trigger_flag=1,
+                                timesync_connection_name="timesync",
+                                region_id = 0,
+                                element_id = idx,
+                            ),
+                            latencybufferconf= rconf.LatencyBufferConf(
+                                latency_buffer_alignment_size = 4096,
+                                latency_buffer_size = lb_size,
+                                region_id = 0,
+                                element_id = idx,
+                            ),
+                            rawdataprocessorconf= rconf.RawDataProcessorConf(
+                                region_id = 0,
+                                element_id = idx,
+                                enable_software_tpg = False,
+                                emulator_mode = EMULATOR_MODE,
+                            ),
+                            requesthandlerconf= rconf.RequestHandlerConf(
+                                latency_buffer_size = lb_size,
+                                pop_limit_pct = 0.8,
+                                pop_size_pct = 0.1,
+                                region_id = 0,
+                                element_id = idx,
+                                output_file = f"raw_output_{idx}.out",
+                                stream_buffer_size = 8388608,
+                                enable_raw_recording = True
+                            )
+                            )) for idx in range(n_links_0-1, n_links_0) if 5 in link_mask[0]
+                ]
+    if NUMBER_OF_DATA_PRODUCERS > 5 or n_links_1 > 0:
+        conf_specs += [
+                    ("flxcard_1",flxcr.Conf(card_id=CARDID,
+                                logical_unit=1,
+                                dma_id=0,
+                                chunk_trailer_size= 32,
+                                dma_block_size_kb= 4,
+                                dma_memory_size_gb= 4,
+                                numa_id=0,
+                                links_enabled=link_mask[1])),
+                    ("flxcardctrl_1",flxcc.Conf(
+                                card_id=CARDID,
+                                logical_unit=1)),
+                    ("dtpctrl_1", dtpcontroller.ConfParams(
+                            connections_file=CONNECTIONS_FILE,
+                            device="flx-1-p2-hf",
+                            source=DATA_SOURCE,
+                            uhal_log_level=UHAL_LOG_LEVEL,
+                            )),
+                ] + [
+                    (f"datahandler_{idx}", rconf.Conf(
+                            readoutmodelconf= rconf.ReadoutModelConf(
+                                source_queue_timeout_ms= QUEUE_POP_WAIT_MS,
+                                fake_trigger_flag=1,
+                                timesync_connection_name="timesync",
+                                region_id = 0,
+                                element_id = idx,
+                            ),
+                            latencybufferconf= rconf.LatencyBufferConf(
+                                latency_buffer_alignment_size = 4096,
+                                latency_buffer_size = lb_size,
+                                region_id = 0,
+                                element_id = idx,
+                            ),
+                            rawdataprocessorconf= rconf.RawDataProcessorConf(
+                                region_id = 0,
+                                element_id = idx,
+                                enable_software_tpg = ENABLE_SOFTWARE_TPG,
+                                emulator_mode = EMULATOR_MODE,
+                            ),
+                            requesthandlerconf= rconf.RequestHandlerConf(
+                                latency_buffer_size = lb_size,
+                                pop_limit_pct = 0.8,
+                                pop_size_pct = 0.1,
+                                region_id = 0,
+                                element_id = idx,
+                                output_file = f"raw_output_{idx}.out",
+                                stream_buffer_size = 8388608,
+                                enable_raw_recording = True
+                            )
+                            )) for idx in range(6, 6+n_links_1-n_tp_link_1)
+                ] + [
+                    (f"datahandler_{idx}", rconf.Conf(
+                            readoutmodelconf= rconf.ReadoutModelConf(
+                                source_queue_timeout_ms= QUEUE_POP_WAIT_MS,
+                                fake_trigger_flag=1,
+                                timesync_connection_name="timesync",
+                                region_id = 0,
+                                element_id = idx,
+                            ),
+                            latencybufferconf= rconf.LatencyBufferConf(
+                                latency_buffer_alignment_size = 4096,
+                                latency_buffer_size = lb_size,
+                                region_id = 0,
+                                element_id = idx,
+                            ),
+                            rawdataprocessorconf= rconf.RawDataProcessorConf(
+                                region_id = 0,
+                                element_id = idx,
+                                enable_software_tpg = False,
+                                emulator_mode = EMULATOR_MODE,
+                            ),
+                            requesthandlerconf= rconf.RequestHandlerConf(
+                                latency_buffer_size = lb_size,
+                                pop_limit_pct = 0.8,
+                                pop_size_pct = 0.1,
+                                region_id = 0,
+                                element_id = idx,
+                                output_file = f"raw_output_{idx}.out",
+                                stream_buffer_size = 8388608,
+                                enable_raw_recording = True
+                            )
+                            )) for idx in range(5+n_links_1, 5+n_links_1+1) if 5 in link_mask[1]
+                ] + [
+                    (f"data_recorder_{idx}", bfs.Conf(
+                            output_file = f"output_{idx}.out",
+                            stream_buffer_size = 8388608
+                            )) for idx in range(NUMBER_OF_DATA_PRODUCERS)
+                ]
+    confcmd = mrccmd("conf", "INITIAL", "CONFIGURED", conf_specs)    
     jstr = json.dumps(confcmd.pod(), indent=4, sort_keys=True)
     print(jstr)
 
