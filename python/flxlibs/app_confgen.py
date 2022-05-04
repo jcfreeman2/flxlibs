@@ -13,13 +13,18 @@ moo.otypes.load_types('readoutlibs/readoutconfig.jsonnet')
 moo.otypes.load_types('readoutlibs/recorderconfig.jsonnet')
 moo.otypes.load_types('flxlibs/felixcardreader.jsonnet')
 moo.otypes.load_types('flxlibs/felixcardcontroller.jsonnet')
+moo.otypes.load_types("nwqueueadapters/queuetonetwork.jsonnet")
+moo.otypes.load_types("nwqueueadapters/networkobjectsender.jsonnet")
+
 
 # Import new types
 import dunedaq.cmdlib.cmd as basecmd # AddressedCmd, 
 import dunedaq.rcif.cmd as rccmd # AddressedCmd, 
 import dunedaq.appfwk.app as app # AddressedCmd, 
 import dunedaq.appfwk.cmd as cmd # AddressedCmd, 
-import dunedaq.readoutlibs.readoutconfig as rconf 
+import dunedaq.readoutlibs.readoutconfig as rconf
+import dunedaq.nwqueueadapters.queuetonetwork as qton
+import dunedaq.nwqueueadapters.networkobjectsender as nos
 import dunedaq.readoutlibs.recorderconfig as bfs
 import dunedaq.flxlibs.felixcardreader as flxcr
 import dunedaq.flxlibs.felixcardcontroller as flxcc
@@ -134,6 +139,32 @@ def generate(
                 for idx in range(6, 6+n_links_1-n_tp_link_1)
         ]
 
+    queue_bare_specs.extend([
+        app.QueueSpec(inst=f"raw_tp_data_requests_{idx}", kind="FollySPSCQueue", capacity=1000)
+            for idx in range(min(5, n_links_0-n_tp_link_0))
+    ] + [
+        app.QueueSpec(inst=f"raw_tp_data_requests_{idx}", kind='FollySPSCQueue', capacity=1000)
+            for idx in range(6, 6+n_links_1-n_tp_link_1)
+    ] + [
+        app.QueueSpec(inst=f"raw_tp_data_requests_{idx}", kind='FollySPSCQueue', capacity=1000)
+            for idx in range(n_links_0-1, n_links_0) if 5 in link_mask[0]
+    ] + [
+        app.QueueSpec(inst=f"raw_tp_data_requests_{idx}", kind='FollySPSCQueue', capacity=1000)
+            for idx in range(5+n_links_1, 5+n_links_1+1) if 5 in link_mask[1]
+    ] + [
+        app.QueueSpec(inst=f"sw_tp_queue_{idx}", kind="FollySPSCQueue", capacity=100000)
+            for idx in range(min(5, n_links_0-n_tp_link_0))
+    ] + [
+        app.QueueSpec(inst=f"tpset_link_{idx}", kind="FollySPSCQueue", capacity=10000)
+            for idx in range(min(5, n_links_0-n_tp_link_0))
+            ] + [
+        app.QueueSpec(inst=f"sw_tp_queue_{idx}", kind="FollySPSCQueue", capacity=100000)
+            for idx in range(6, 6+n_links_1-n_tp_link_1)
+    ] + [
+        app.QueueSpec(inst=f"tpset_link_{idx}", kind="FollySPSCQueue", capacity=10000)
+            for idx in range(6, 6+n_links_1-n_tp_link_1)
+    ])
+
     # Only needed to reproduce the same order as when using jsonnet
     queue_specs = app.QueueSpecs(sorted(queue_bare_specs, key=lambda x: x.inst))
 
@@ -146,6 +177,8 @@ def generate(
                             app.QueueInfo(name="fragment_queue", inst="data_fragments_q", dir="output"),
                             app.QueueInfo(name="raw_recording", inst=f"{FRONTEND_TYPE}_recording_link_{idx}", dir="output"),
                             app.QueueInfo(name="errored_frames", inst="errored_frames_q", dir="output"),
+                            app.QueueInfo(name="tp_out", inst=f"sw_tp_queue_{idx}", dir="output"),
+                            app.QueueInfo(name="tpset_out", inst=f"tpset_link_{idx}", dir="output"),
                             ]) for idx in range(min(5, n_links_0-n_tp_link_0))
         ] + [
                 mspec(f"datahandler_{idx}", "DataLinkHandler", [
@@ -155,7 +188,23 @@ def generate(
                             app.QueueInfo(name="fragment_queue", inst="data_fragments_q", dir="output"),
                             app.QueueInfo(name="raw_recording", inst=f"{FRONTEND_TYPE}_recording_link_{idx}", dir="output"),
                             app.QueueInfo(name="errored_frames", inst="errored_frames_q", dir="output"),
+                            app.QueueInfo(name="tp_out", inst=f"sw_tp_queue_{idx}", dir="output"),
+                            app.QueueInfo(name="tpset_out", inst=f"tpset_link_{idx}", dir="output"),
                             ]) for idx in range(6, 6+n_links_1-n_tp_link_1)
+        ] + [
+                mspec(f"sw_tp_handler_{idx}", "DataLinkHandler", [
+                    app.QueueInfo(name="raw_input", inst=f"sw_tp_queue_{idx}", dir="input"),
+                    app.QueueInfo(name="timesync", inst="time_sync_q", dir="output"),
+                    app.QueueInfo(name="requests", inst="tp_data_requests", dir="input"),
+                    app.QueueInfo(name="fragment_queue", inst="data_fragments_q", dir="output"),
+                    ]) for idx in range(min(5, n_links_0-n_tp_link_0))
+        ] + [
+                mspec(f"sw_tp_handler_{idx}", "DataLinkHandler", [
+                    app.QueueInfo(name="raw_input", inst=f"sw_tp_queue_{idx}", dir="input"),
+                    app.QueueInfo(name="timesync", inst="time_sync_q", dir="output"),
+                    app.QueueInfo(name="requests", inst="tp_data_requests", dir="input"),
+                    app.QueueInfo(name="fragment_queue", inst="data_fragments_q", dir="output"),
+                    ]) for idx in range(min(5, n_links_0-n_tp_link_0))
         ] + [
                 mspec(f"datahandler_{idx}", "DataLinkHandler", [
                             app.QueueInfo(name="raw_input", inst=f"raw_tp_link_{idx}", dir="input"),
@@ -190,7 +239,20 @@ def generate(
                                             ])
         ]
 
+    mod_specs.extend([
+        mspec(f"tpset_publisher_{idx}", "QueueToNetwork", [
+                                        app.QueueInfo(name="input", inst=f"tpset_link_{idx}", dir="input")
+                                        ],)
+            for idx in range(min(5, n_links_0-n_tp_link_0))
+    ])
     
+    mod_specs.extend(
+        mspec(f"tpset_publisher_{idx}", "QueueToNetwork", [
+                                        app.QueueInfo(name="input", inst=f"tpset_link_{idx}", dir="input")
+                                        ])
+            for idx in range(6, 6+n_links_1-n_tp_link_1)
+    )
+
     if n_links_0 > 0:
         mod_specs.append(mspec("flxcard_0", "FelixCardReader", [
                         app.QueueInfo(name=f"output_{idx}", inst=f"{FRONTEND_TYPE}_link_{idx}", dir="output")
@@ -402,6 +464,96 @@ def generate(
                         output_file = f"output_{idx}.out",
                         stream_buffer_size = 8388608
                         )) for idx in range(NUMBER_OF_DATA_PRODUCERS)
+            ] + [
+                (f"sw_tp_handler_{idx}", rconf.Conf(
+                        readoutmodelconf= rconf.ReadoutModelConf(
+                            source_queue_timeout_ms= QUEUE_POP_WAIT_MS,
+                            fake_trigger_flag=1,
+                            timesync_connection_name="timesync",
+                            region_id = 0,
+                            element_id = idx,
+                        ),
+                        latencybufferconf= rconf.LatencyBufferConf(
+                            latency_buffer_alignment_size = 4096,
+                            latency_buffer_size = lb_size,
+                            region_id = 0,
+                            element_id = idx,
+                        ),
+                        rawdataprocessorconf= rconf.RawDataProcessorConf(
+                            region_id = 0,
+                            element_id = idx,
+                            enable_software_tpg = ENABLE_SOFTWARE_TPG,
+                        ),
+                        requesthandlerconf= rconf.RequestHandlerConf(
+                            latency_buffer_size = lb_size,
+                            pop_limit_pct = 0.8,
+                            pop_size_pct = 0.1,
+                            region_id = 0,
+                            element_id = idx,
+                            output_file = f"sw_tp_output_{idx}.out",
+                            stream_buffer_size = 8388608,
+                            enable_raw_recording = True
+                        )
+                        )) for idx in range(min(5, n_links_0-n_tp_link_0))
+            ] + [
+                (f"sw_tp_handler_{idx}", rconf.Conf(
+                        readoutmodelconf= rconf.ReadoutModelConf(
+                            source_queue_timeout_ms= QUEUE_POP_WAIT_MS,
+                            fake_trigger_flag=1,
+                            timesync_connection_name="timesync",
+                            region_id = 0,
+                            element_id = idx,
+                        ),
+                        latencybufferconf= rconf.LatencyBufferConf(
+                            latency_buffer_alignment_size = 4096,
+                            latency_buffer_size = lb_size,
+                            region_id = 0,
+                            element_id = idx,
+                        ),
+                        rawdataprocessorconf= rconf.RawDataProcessorConf(
+                            region_id = 0,
+                            element_id = idx,
+                            enable_software_tpg = ENABLE_SOFTWARE_TPG,
+                        ),
+                        requesthandlerconf= rconf.RequestHandlerConf(
+                            latency_buffer_size = lb_size,
+                            pop_limit_pct = 0.8,
+                            pop_size_pct = 0.1,
+                            region_id = 0,
+                            element_id = idx,
+                            output_file = f"sw_tp_output_{idx}.out",
+                            stream_buffer_size = 8388608,
+                            enable_raw_recording = True
+                        )
+                        )) for idx in range(6, 6+n_links_1-n_tp_link_1)
+            ] + [
+                (
+                    f"tpset_publisher_{idx}",
+                    qton.Conf(
+                        msg_type="dunedaq::trigger::TPSet",
+                        msg_module_name="TPSetNQ",
+                        sender_config=nos.Conf(
+                            name=f"tpsets_{idx}",
+                            topic="foo",
+                            stype="msgpack",
+                        ),
+                    ),
+                )
+                for idx in range(min(5, n_links_0-n_tp_link_0))
+            ] + [
+                (
+                    f"tpset_publisher_{idx}",
+                    qton.Conf(
+                        msg_type="dunedaq::trigger::TPSet",
+                        msg_module_name="TPSetNQ",
+                        sender_config=nos.Conf(
+                            name=f"tpsets_{idx}",
+                            topic="foo",
+                            stype="msgpack",
+                        ),
+                    ),
+                )
+                for idx in range(6, 6+n_links_1-n_tp_link_1)
             ])
     
     jstr = json.dumps(confcmd.pod(), indent=4, sort_keys=True)
@@ -414,7 +566,9 @@ def generate(
             ("flxcardctrl_.*", startpars),
             ("data_recorder_.*", startpars),
             ("timesync_consumer", startpars),
-            ("fragment_consumer", startpars)
+            ("fragment_consumer", startpars),
+            ("sw_tp_handler_.*", startpars),
+            ("tpset_publisher_.*", startpars)
         ])
 
     jstr = json.dumps(startcmd.pod(), indent=4, sort_keys=True)
@@ -427,7 +581,9 @@ def generate(
             ("datahandler_.*", None),
             ("data_recorder_.*", None),
             ("timesync_consumer", None),
-            ("fragment_consumer", None)
+            ("fragment_consumer", None),
+            ("sw_tp_handler_.*", None),
+            ("tpset_publisher_.*", None)
         ])
 
     jstr = json.dumps(stopcmd.pod(), indent=4, sort_keys=True)
