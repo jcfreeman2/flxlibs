@@ -140,18 +140,6 @@ def generate(
         ]
 
     queue_bare_specs.extend([
-        app.QueueSpec(inst=f"raw_tp_data_requests_{idx}", kind="FollySPSCQueue", capacity=1000)
-            for idx in range(min(5, n_links_0-n_tp_link_0))
-    ] + [
-        app.QueueSpec(inst=f"raw_tp_data_requests_{idx}", kind='FollySPSCQueue', capacity=1000)
-            for idx in range(6, 6+n_links_1-n_tp_link_1)
-    ] + [
-        app.QueueSpec(inst=f"raw_tp_data_requests_{idx}", kind='FollySPSCQueue', capacity=1000)
-            for idx in range(n_links_0-1, n_links_0) if 5 in link_mask[0]
-    ] + [
-        app.QueueSpec(inst=f"raw_tp_data_requests_{idx}", kind='FollySPSCQueue', capacity=1000)
-            for idx in range(5+n_links_1, 5+n_links_1+1) if 5 in link_mask[1]
-    ] + [
         app.QueueSpec(inst=f"sw_tp_queue_{idx}", kind="FollySPSCQueue", capacity=100000)
             for idx in range(min(5, n_links_0-n_tp_link_0))
     ] + [
@@ -164,6 +152,8 @@ def generate(
         app.QueueSpec(inst=f"tpset_link_{idx}", kind="FollySPSCQueue", capacity=10000)
             for idx in range(6, 6+n_links_1-n_tp_link_1)
     ])
+
+    queue_bare_specs += [app.QueueSpec(inst=f"tp_data_requests", kind="FollySPSCQueue", capacity=1000)]
 
     # Only needed to reproduce the same order as when using jsonnet
     queue_specs = app.QueueSpecs(sorted(queue_bare_specs, key=lambda x: x.inst))
@@ -178,7 +168,7 @@ def generate(
                             app.QueueInfo(name="raw_recording", inst=f"{FRONTEND_TYPE}_recording_link_{idx}", dir="output"),
                             app.QueueInfo(name="errored_frames", inst="errored_frames_q", dir="output"),
                             app.QueueInfo(name="tp_out", inst=f"sw_tp_queue_{idx}", dir="output"),
-                            app.QueueInfo(name="tpset_out", inst=f"tpset_link_{idx}", dir="output"),
+                            app.QueueInfo(name="tpset_out", inst=f"tpset_link_{idx}", dir="output")
                             ]) for idx in range(min(5, n_links_0-n_tp_link_0))
         ] + [
                 mspec(f"datahandler_{idx}", "DataLinkHandler", [
@@ -189,7 +179,7 @@ def generate(
                             app.QueueInfo(name="raw_recording", inst=f"{FRONTEND_TYPE}_recording_link_{idx}", dir="output"),
                             app.QueueInfo(name="errored_frames", inst="errored_frames_q", dir="output"),
                             app.QueueInfo(name="tp_out", inst=f"sw_tp_queue_{idx}", dir="output"),
-                            app.QueueInfo(name="tpset_out", inst=f"tpset_link_{idx}", dir="output"),
+                            app.QueueInfo(name="tpset_out", inst=f"tpset_link_{idx}", dir="output")
                             ]) for idx in range(6, 6+n_links_1-n_tp_link_1)
         ] + [
                 mspec(f"sw_tp_handler_{idx}", "DataLinkHandler", [
@@ -204,7 +194,7 @@ def generate(
                     app.QueueInfo(name="timesync", inst="time_sync_q", dir="output"),
                     app.QueueInfo(name="requests", inst="tp_data_requests", dir="input"),
                     app.QueueInfo(name="fragment_queue", inst="data_fragments_q", dir="output"),
-                    ]) for idx in range(min(5, n_links_0-n_tp_link_0))
+                    ]) for idx in range(6, 6+n_links_1-n_tp_link_1)
         ] + [
                 mspec(f"datahandler_{idx}", "DataLinkHandler", [
                             app.QueueInfo(name="raw_input", inst=f"raw_tp_link_{idx}", dir="input"),
@@ -276,6 +266,8 @@ def generate(
 
     mod_specs.append(mspec("flxcardctrl_0", "FelixCardController", []))
     nw_specs = [nwmgr.Connection(name="timesync", topics=["Timesync"], address="tcp://127.0.0.1:6000")]
+    nw_specs += [nwmgr.Connection(name=f"tpsets_{idx}",topics=["foo"],  address="tcp://127.0.0.1:" + str(5000 + idx)) for idx in range(min(5, n_links_0-n_tp_link_0))]
+    nw_specs += [nwmgr.Connection(name=f"tpsets_{idx}",topics=["foo"],  address="tcp://127.0.0.1:" + str(5000 + idx)) for idx in range(6, 6+n_links_1-n_tp_link_1)]
     init_specs = app.Init(queues=queue_specs, modules=mod_specs, nwconnections=nw_specs)
 
     jstr = json.dumps(init_specs.pod(), indent=4, sort_keys=True)
