@@ -47,7 +47,7 @@ public:
     , m_run_marker{ false }
     , m_parser_thread(0)
   {}
-  ~ElinkModel() {}
+  virtual ~ElinkModel() {};
 
   void set_sink(const std::string& sink_name) override
   {
@@ -63,12 +63,12 @@ public:
 
   std::shared_ptr<err_sink_t>& get_error_sink() { return m_error_sink_queue; }
 
-  void init(const data_t& /*args*/, const size_t block_queue_capacity)
+  void init(const data_t& /*args*/, const size_t block_queue_capacity) override
   {
     m_block_addr_queue = std::make_unique<folly::ProducerConsumerQueue<uint64_t>>(block_queue_capacity); // NOLINT
   }
 
-  void conf(const data_t& /*args*/, size_t block_size, bool is_32b_trailers)
+  void conf(const data_t& /*args*/, size_t block_size, bool is_32b_trailers) override
   {
     if (m_configured) {
       TLOG_DEBUG(5) << "ElinkModel is already configured!";
@@ -82,7 +82,7 @@ public:
     }
   }
 
-  void start(const data_t& /*args*/)
+  void start(const data_t& /*args*/) override
   {
     m_t0 = std::chrono::high_resolution_clock::now();
     if (!m_run_marker.load()) {
@@ -94,7 +94,7 @@ public:
     }
   }
 
-  void stop(const data_t& /*args*/)
+  void stop(const data_t& /*args*/) override
   {
     if (m_run_marker.load()) {
       set_running(false);
@@ -113,7 +113,7 @@ public:
     TLOG_DEBUG(5) << "Active state was toggled from " << was_running << " to " << should_run;
   }
 
-  bool queue_in_block_address(uint64_t block_addr) // NOLINT(build/unsigned)
+  bool queue_in_block_address(uint64_t block_addr) override // NOLINT(build/unsigned)
   {
     if (m_block_addr_queue->write(block_addr)) { // ok write
       return true;
@@ -122,7 +122,7 @@ public:
     }
   }
 
-  void get_info(opmonlib::InfoCollector& ci, int /*level*/)
+  void get_info(opmonlib::InfoCollector& ci, int /*level*/) override
   {
     felixcardreaderinfo::ELinkInfo info;
     auto now = std::chrono::high_resolution_clock::now();
@@ -146,8 +146,8 @@ public:
     info.num_subchunk_crc_errors = stats.subchunk_crc_error_ctr.exchange(0);
     info.num_subchunk_trunc_errors = stats.subchunk_trunc_error_ctr.exchange(0);
     info.num_subchunk_errors = stats.subchunk_error_ctr.exchange(0);
-    info.rate_blocks_processed = info.num_blocks_processed / seconds / 1000.;
-    info.rate_chunks_processed = info.num_chunks_processed / seconds / 1000.;
+    info.rate_blocks_processed = info.num_blocks_processed / seconds / 1000.; // NOLINT
+    info.rate_chunks_processed = info.num_chunks_processed / seconds / 1000.; // NOLINT
 
     TLOG_DEBUG(2) << inherited::m_elink_str // Move to TLVL_TAKE_NOTE from readout
                   << " Parser stats ->"
@@ -186,15 +186,15 @@ private:
   UniqueBlockAddrQueue m_block_addr_queue;
 
   // Processor
-  inline static const std::string m_parser_thread_name = "elinkp";
+  inline static const std::string m_parser_thread_name = "elinkp"; // NOLINT
   readoutlibs::ReusableThread m_parser_thread;
   void process_elink()
   {
     while (m_run_marker.load()) {
       uint64_t block_addr;                        // NOLINT
       if (m_block_addr_queue->read(block_addr)) { // read success
-        const auto* block = const_cast<felix::packetformat::block*>(
-          felix::packetformat::block_from_bytes(reinterpret_cast<const char*>(block_addr)) // NOLINT
+        const auto* block = 
+          felix::packetformat::block_from_bytes(reinterpret_cast<const char*>(block_addr) // NOLINT
         );
         m_parser->process(block);
       } else { // couldn't read from queue

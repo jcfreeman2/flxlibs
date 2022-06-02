@@ -30,8 +30,7 @@ enum
   TLVL_BOOKKEEPING = 15
 };
 
-namespace dunedaq {
-namespace flxlibs {
+namespace dunedaq::flxlibs {
 
 CardWrapper::CardWrapper()
   : m_run_marker{ false }
@@ -190,10 +189,10 @@ int
 CardWrapper::allocate_CMEM(uint8_t numa, u_long bsize, u_long* paddr, u_long* vaddr) // NOLINT
 {
   TLOG_DEBUG(TLVL_WORK_STEPS) << "Allocating CMEM buffer " << m_card_id_str << " dma id:" << std::to_string(m_dma_id);
-  int handle;
+  int handle = -999;
   unsigned ret = CMEM_Open(); // cmem_rcc.h
   if (!ret) {
-    ret = CMEM_NumaSegmentAllocate(bsize, numa, const_cast<char*>("FelixRO"), &handle); // NUMA aware
+    ret = CMEM_NumaSegmentAllocate(bsize, numa, const_cast<char*>("FelixRO"), &handle); // NOLINT // NUMA aware
     // ret = CMEM_GFPBPASegmentAllocate(bsize, const_cast<char*>("FelixRO"), &handle); // non NUMA aware
   }
   if (!ret) {
@@ -276,7 +275,7 @@ void
 CardWrapper::read_current_address()
 {
   m_card_mutex.lock();
-  m_current_addr = m_flx_card->m_bar0->DMA_DESC_STATUS[m_dma_id].current_address;
+  m_current_addr = m_flx_card->m_bar0->DMA_DESC_STATUS[m_dma_id].current_address; // NOLINT
   m_card_mutex.unlock();
 }
 
@@ -348,5 +347,5 @@ CardWrapper::process_DMA()
   TLOG_DEBUG(TLVL_WORK_STEPS) << "CardWrapper processor thread finished.";
 }
 
-} // namespace flxlibs
-} // namespace dunedaq
+} // namespace dunedaq::flxlibs
+

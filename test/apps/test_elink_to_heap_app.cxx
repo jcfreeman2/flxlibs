@@ -76,10 +76,9 @@ struct BlockRouter
 
   std::function<void(uint64_t)> count_block_addr = [&, this](uint64_t block_addr) { // NOLINT
     block_counter++;
-    const auto* block = const_cast<felix::packetformat::block*>(
-      felix::packetformat::block_from_bytes(reinterpret_cast<const char*>(block_addr)) // NOLINT
-    );
-    auto elink = block->elink;
+    const auto* block = felix::packetformat::block_from_bytes(reinterpret_cast<const char*>(block_addr)); // NOLINT
+    
+    auto elink = static_cast<int>(block->elink);
     if (this->elink_block_counters.count(elink) == 0) {
       this->elink_block_counters[elink] = 0;
     }
@@ -116,8 +115,8 @@ main(int /*argc*/, char** /*argv[]*/)
   CardWrapper flx;
 
   BlockRouter slr1_router;
-  for (unsigned i = 0; i < 5; ++i) {
-    auto tag = i * 64;
+  for (int i = 0; i < 5; ++i) {
+    int tag = i * 64;
     slr1_router.elinks[tag] = std::make_unique<ElinkModel<PayloadWrapper>>();
     slr1_router.lbuffers[tag] = std::make_unique<LatencyBuffer>(1000000);
     auto& parser1 = slr1_router.elinks[tag]->get_parser();

@@ -52,8 +52,7 @@ main(int /*argc*/, char** /*argv[]*/)
   size_t block_counter = 0;
   std::function<void(uint64_t)> count_block_addr = [&](uint64_t block_addr) { // NOLINT
     block_counter++;
-    const auto* block = const_cast<felix::packetformat::block*>(
-      felix::packetformat::block_from_bytes(reinterpret_cast<const char*>(block_addr)) // NOLINT
+    const auto* block = felix::packetformat::block_from_bytes(reinterpret_cast<const char*>(block_addr) // NOLINT
     );
     auto elink = block->elink;
     if (elink_block_counters.count(elink) == 0) {

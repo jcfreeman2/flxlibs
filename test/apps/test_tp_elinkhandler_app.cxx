@@ -27,6 +27,7 @@
 #include <memory>
 #include <string>
 #include <sstream>
+#include <utility>
 
 using namespace dunedaq::flxlibs;
 using namespace dunedaq::fdreadoutlibs;
@@ -137,8 +138,8 @@ main(int argc, char* argv[])
   bool firstTPchunk = true;
   int amount = 0;
   auto& tpparser = elinks[5 * 64]->get_parser();
-  uint64_t good_counter = 0;
-  uint64_t total_counter = 0;
+  int good_counter = 0;
+  int total_counter = 0;
   tpparser.process_chunk_func = [&](const felix::packetformat::chunk& chunk) {
     ++total_counter;
     if (firstTPchunk) {
@@ -150,11 +151,11 @@ main(int argc, char* argv[])
       TLOG() << "TP subchunk number: " << n_subchunks; 
       TLOG() << "TP chunk length: " << chunk_length;
 
-      uint32_t bytes_copied_chunk = 0;
-      dunedaq::detdataformats::wib::RawWIBTp* rwtpp = static_cast<dunedaq::detdataformats::wib::RawWIBTp*>(std::malloc(chunk_length)); //+ sizeof(int)));
+      int bytes_copied_chunk = 0;
+      dunedaq::detdataformats::wib::RawWIBTp* rwtpp = static_cast<dunedaq::detdataformats::wib::RawWIBTp*>(std::malloc(chunk_length)); //+ sizeof(int))); // NOLINT
       //auto* rwtpip = reinterpret_cast<uint8_t*>(rwtpp);
       
-      char* payload = static_cast<char*>(malloc(chunk_length * sizeof(char)));
+      char* payload = static_cast<char*>(malloc(chunk_length * sizeof(char))); // NOLINT
       TP_SUPERCHUNK_STRUCT payload_struct(chunk_length, payload);
       for (unsigned i = 0; i < n_subchunks; i++) {
         TLOG() << "TP subchunk " << i << " length: " << subchunk_sizes[i];
@@ -166,7 +167,7 @@ main(int argc, char* argv[])
         // Buffer full
       }
 
-      if ((uint32_t)(rwtpp->m_head.m_crate_no) == 21) { // RS FIXME -> read from cmdline the list of signatures loaded to EMU
+      if (static_cast<uint32_t>(rwtpp->m_head.m_crate_no) == 21) { // NOLINT // RS FIXME -> read from cmdline the list of signatures loaded to EMU
         ++good_counter;
       }
 
@@ -188,10 +189,9 @@ main(int argc, char* argv[])
   // Implement how block addresses should be handled
   std::function<void(uint64_t)> count_block_addr = [&](uint64_t block_addr) { // NOLINT
     ++block_counter;
-    const auto* block = const_cast<felix::packetformat::block*>(
-      felix::packetformat::block_from_bytes(reinterpret_cast<const char*>(block_addr)) // NOLINT
-    );
-    auto elink = block->elink;
+    const auto* block = felix::packetformat::block_from_bytes(reinterpret_cast<const char*>(block_addr)); // NOLINT
+
+    auto elink = static_cast<int>(block->elink);
     if (elinks.count(elink) != 0) {
       if (elinks[elink]->queue_in_block_address(block_addr)) {
         // queued block
@@ -227,8 +227,8 @@ main(int argc, char* argv[])
   }
 
   // Filewriter
-  std::function<size_t(std::string, std::unique_ptr<LatencyBuffer>&)> write_to_file =
-    [&](std::string filename, std::unique_ptr<LatencyBuffer>& buffer) {
+  std::function<size_t(const std::string&, std::unique_ptr<LatencyBuffer>&)> write_to_file =
+    [&](const std::string& filename, std::unique_ptr<LatencyBuffer>& buffer) {
       std::ofstream linkfile(filename, std::ios::out | std::ios::binary);
       size_t bytes_written = 0;
       TP_SUPERCHUNK_STRUCT spc;

@@ -22,9 +22,7 @@
 #include <sstream>
 #include <utility>
 
-namespace dunedaq {
-namespace flxlibs {
-namespace parsers {
+namespace dunedaq::flxlibs::parsers {
 
 inline void
 print_bytes(std::ostream& ostr, const char* title, const unsigned char* data, std::size_t length, bool format = true)
@@ -42,10 +40,10 @@ print_bytes(std::ostream& ostr, const char* title, const unsigned char* data, st
 
 inline void
 dump_to_buffer(const char* data,
-               std::size_t size,
+               int size,
                void* buffer,
-               uint32_t buffer_pos, // NOLINT
-               const std::size_t& buffer_size)
+               int buffer_pos, // NOLINT
+               const int& buffer_size)
 {
   auto bytes_to_copy = size; // NOLINT
   while (bytes_to_copy > 0) {
@@ -135,7 +133,7 @@ fixsizedChunkViaHeap(std::shared_ptr<iomanager::SenderConcept<TargetStruct*>>& s
       // report? Add custom way of handling unexpected user payloads.
       //   In this case -> not fixed size chunk -> chunk-to-userbuff not possible
     } else {
-      TargetStruct* payload = new TargetStruct[sizeof(TargetStruct)];
+      auto payload = new TargetStruct[sizeof(TargetStruct)];
       // std::unique_ptr<TargetStruct> payload = std::make_unique<TargetStruct>();
       uint_fast32_t bytes_copied_chunk = 0; // NOLINT
       for (unsigned i = 0; i < n_subchunks; i++) {
@@ -167,7 +165,7 @@ varsizedChunkIntoWithDatafield(std::shared_ptr<iomanager::SenderConcept<TargetWi
     auto n_subchunks = chunk.subchunk_number();
     TargetWithDatafield twd;
     twd.get_data().reserve(chunk.length());
-    uint32_t bytes_copied_chunk = 0;
+    int bytes_copied_chunk = 0;
     for (unsigned i = 0; i< n_subchunks; ++i) {
       dump_to_buffer(subchunk_data[i],
                      subchunk_sizes[i],
@@ -195,7 +193,7 @@ varsizedChunkIntoWrapper(std::shared_ptr<iomanager::SenderConcept<fdreadoutlibs:
     auto n_subchunks = chunk.subchunk_number();
     auto chunk_length = chunk.length();
 
-    char* payload = static_cast<char*>(malloc(chunk_length * sizeof(char)));
+    char* payload = static_cast<char*>(malloc(chunk_length * sizeof(char))); // NOLINT
     uint32_t bytes_copied_chunk = 0; // NOLINT(build/unsigned)
     for (unsigned i = 0; i < n_subchunks; ++i) {
       dump_to_buffer(
@@ -217,7 +215,7 @@ varsizedShortchunkIntoWrapper(std::shared_ptr<iomanager::SenderConcept<fdreadout
 {
   return [&](const felix::packetformat::shortchunk& shortchunk) {
     auto shortchunk_length = shortchunk.length;
-    char* payload = static_cast<char*>(malloc(shortchunk_length * sizeof(char)));
+    char* payload = static_cast<char*>(malloc(shortchunk_length * sizeof(char))); // NOLINT
     std::memcpy(payload, shortchunk.data, shortchunk_length);
     fdreadoutlibs::types::VariableSizePayloadWrapper payload_wrapper(shortchunk_length, payload);
     try {
@@ -246,8 +244,6 @@ errorChunkIntoSink(std::shared_ptr<iomanager::SenderConcept<felix::packetformat:
 
 //// Implement here any other DUNE specific FELIX chunk/block to User payload parsers
 
-} // namespace parsers
-} // namespace flxlibs
-} // namespace dunedaq
+} // namespace dunedaq::flxlibs::parsers
 
 #endif // FLXLIBS_INCLUDE_FLXLIBS_AVAILABLEPARSEROPERATIONS_HPP_

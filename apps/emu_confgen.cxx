@@ -331,7 +331,7 @@ main(int argc, char* argv[])
 
   for (unsigned i = 0; i < emusize; i++) { // NOLINT
     output << "FE_EMU_CONFIG_WRADDR=0x" << std::hex << i << std::endl;
-    output << "FE_EMU_CONFIG_WRDATA=0x" << std::hex << emudata[i] << std::endl;
+    output << "FE_EMU_CONFIG_WRDATA=0x" << std::hex << emudata[i] << std::endl; // NOLINT
     output << "FE_EMU_CONFIG_WE=1" << std::endl;
     output << "FE_EMU_CONFIG_WE=0" << std::endl;
   }

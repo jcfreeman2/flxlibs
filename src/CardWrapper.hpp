@@ -50,7 +50,8 @@ public:
 
   void set_block_addr_handler(std::function<void(uint64_t)>& handle) // NOLINT(build/unsigned)
   {                                                                  // NOLINT
-    m_handle_block_addr = std::bind(handle, std::placeholders::_1);
+    //m_handle_block_addr = std::bind(handle, std::placeholders::_1);
+    m_handle_block_addr = handle;
     m_block_addr_handler_available = true;
   }
 
@@ -108,7 +109,7 @@ private:
   u_long m_destination;          // u_long -> FlxCard.h
 
   // Processor
-  inline static const std::string m_dma_processor_name = "flx-dma";
+  inline static const std::string m_dma_processor_name = "flx-dma"; // NOLINT
   std::atomic<bool> m_run_lock;
   readoutlibs::ReusableThread m_dma_processor;
   std::function<void(uint64_t)> m_handle_block_addr; // NOLINT

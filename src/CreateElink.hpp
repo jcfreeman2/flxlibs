@@ -16,8 +16,7 @@
 #include <memory>
 #include <string>
 
-namespace dunedaq {
-namespace flxlibs {
+namespace dunedaq::flxlibs {
 
 std::unique_ptr<ElinkConcept>
 createElinkModel(const std::string& target)
@@ -85,7 +84,6 @@ createElinkModel(const std::string& target)
   return nullptr;
 }
 
-} // namespace flxlibs
-} // namespace dunedaq
+} // namespace dunedaq::flxlibs
 
 #endif // FLXLIBS_SRC_CREATEELINK_HPP_

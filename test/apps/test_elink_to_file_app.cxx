@@ -79,10 +79,9 @@ struct BlockRouter
 
   std::function<void(uint64_t)> count_block_addr = [&, this](uint64_t block_addr) { // NOLINT
     block_counter++;
-    const auto* block = const_cast<felix::packetformat::block*>(
-      felix::packetformat::block_from_bytes(reinterpret_cast<const char*>(block_addr)) // NOLINT
+    const auto* block = felix::packetformat::block_from_bytes(reinterpret_cast<const char*>(block_addr) // NOLINT
     );
-    auto elink = block->elink;
+    auto elink = static_cast<int>(block->elink);
     if (this->elink_block_counters.count(elink) == 0) {
       this->elink_block_counters[elink] = 0;
     }
@@ -126,8 +125,8 @@ main(int /*argc*/, char** /*argv[]*/)
 
   BlockRouter slr1_router;
   BlockRouter slr2_router;
-  for (unsigned i = 0; i < 5; ++i) {
-    auto tag = i * 64;
+  for (int i = 0; i < 5; ++i) {
+    int tag = i * 64;
     slr1_router.elinks[tag] = std::make_unique<ElinkModel<USER_PAYLOAD_STRUCT>>();
     slr2_router.elinks[tag] = std::make_unique<ElinkModel<USER_PAYLOAD_STRUCT>>();
     slr1_router.lbuffers[tag] = std::make_unique<LatencyBuffer>(1000000);
@@ -193,8 +192,8 @@ main(int /*argc*/, char** /*argv[]*/)
   }
 
   // Filewriter
-  std::function<size_t(std::string, std::unique_ptr<LatencyBuffer>&)> write_to_file =
-    [&](std::string filename, std::unique_ptr<LatencyBuffer>& buffer) {
+  std::function<size_t(const std::string&, std::unique_ptr<LatencyBuffer>&)> write_to_file =
+    [&](const std::string& filename, std::unique_ptr<LatencyBuffer>& buffer) {
       std::ofstream linkfile(filename, std::ios::out | std::ios::binary);
       size_t bytes_written = 0;
       USER_PAYLOAD_STRUCT upc;

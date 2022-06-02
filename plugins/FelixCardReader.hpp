@@ -62,10 +62,9 @@ private:
   void do_configure(const data_t& args);
   void do_start(const data_t& args);
   void do_stop(const data_t& args);
-  void get_info(opmonlib::InfoCollector& ci, int level);
+  void get_info(opmonlib::InfoCollector& ci, int level) override;
 
   // Configuration
-  bool m_configured;
   module_conf_t m_cfg;
 
   int m_card_id;

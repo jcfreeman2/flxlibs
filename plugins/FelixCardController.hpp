@@ -20,11 +20,11 @@
 
 #include "CardControllerWrapper.hpp"
 
+#include <map>
 #include <memory>
 #include <string>
 
-namespace dunedaq {
-namespace flxlibs {
+namespace dunedaq::flxlibs {
 
 class FelixCardController : public dunedaq::appfwk::DAQModule
 {
@@ -44,7 +44,7 @@ private:
 
   // Commands
   void do_configure(const data_t& args);
-  void get_info(opmonlib::InfoCollector& ci, int level);
+  void get_info(opmonlib::InfoCollector& ci, int level) override;
   void get_reg(const data_t& args);
   void set_reg(const data_t& args);
   void get_bf(const data_t& args);
@@ -55,10 +55,9 @@ private:
   module_conf_t m_cfg;
 
   // FELIX Card
-  std::map<uint32_t, std::unique_ptr<CardControllerWrapper> > m_card_wrappers;
+  std::map<uint32_t, std::unique_ptr<CardControllerWrapper> > m_card_wrappers; // NOLINT
 };
 
-} // namespace flxlibs
-} // namespace dunedaq
+} // namespace dunedaq::flxlibs
 
 #endif // FLXLIBS_PLUGINS_FELIXCARDCONTROLLER_HPP_

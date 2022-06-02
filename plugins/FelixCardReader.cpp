@@ -37,12 +37,10 @@ enum
   TLVL_BOOKKEEPING = 15
 };
 
-namespace dunedaq {
-namespace flxlibs {
+namespace dunedaq::flxlibs {
 
 FelixCardReader::FelixCardReader(const std::string& name)
   : DAQModule(name)
-  , m_configured(false)
   , m_card_id(0)
   , m_logical_unit(0)
   , m_links_enabled({0})
@@ -62,7 +60,7 @@ FelixCardReader::FelixCardReader(const std::string& name)
 inline void
 tokenize(std::string const& str, const char delim, std::vector<std::string>& out)
 {
-  std::size_t start;
+  std::size_t start = 0;
   std::size_t end = 0;
   while ((start = str.find_first_not_of(delim, end)) != std::string::npos) {
     end = str.find(delim, start);
@@ -105,10 +103,9 @@ FelixCardReader::init(const data_t& args)
   // Router function of block to appropriate ElinkHandlers
   m_block_router = [&](uint64_t block_addr) { // NOLINT
     // block_counter++;
-    const auto* block = const_cast<felix::packetformat::block*>(
-      felix::packetformat::block_from_bytes(reinterpret_cast<const char*>(block_addr)) // NOLINT
-    );
-    auto elink = block->elink;
+    const auto* block = felix::packetformat::block_from_bytes(reinterpret_cast<const char*>(block_addr)); // NOLINT
+    
+    int elink = static_cast<int>(block->elink);
     if (m_elinks.count(elink) != 0) {
       m_elinks[elink]->queue_in_block_address(block_addr);
     } else {
@@ -136,11 +133,11 @@ FelixCardReader::do_configure(const data_t& args)
 {
     m_cfg = args.get<felixcardreader::Conf>();
     m_card_id = m_cfg.card_id;
-    m_logical_unit = m_cfg.logical_unit;
+    m_logical_unit = static_cast<int>(m_cfg.logical_unit);
     m_links_enabled = m_cfg.links_enabled;
     m_num_links = m_links_enabled.size();
     m_block_size = m_cfg.dma_block_size_kb * m_1kb_block_size;
-    m_chunk_trailer_size = m_cfg.chunk_trailer_size;
+    m_chunk_trailer_size = static_cast<int>(m_cfg.chunk_trailer_size);
     bool is_32b_trailer = false;
 
     TLOG(TLVL_BOOKKEEPING) << "Number of elinks specified in configuration: " << m_links_enabled.size();
@@ -172,10 +169,10 @@ FelixCardReader::do_configure(const data_t& args)
     for (unsigned i = 0; i < m_num_links; ++i) {
       auto elink = m_elinks.extract(linkids[i]);
       auto tag = m_links_enabled[i] * m_elink_multiplier;
-      elink.key() = tag;
+      elink.key() = static_cast<int>(tag);
       m_elinks.insert(std::move(elink));
       m_elinks[tag]->set_ids(m_card_id, m_logical_unit, m_links_enabled[i], tag);
-      m_elinks[tag]->conf(args, m_block_size, is_32b_trailer);
+      m_elinks[tag]->conf(args, m_block_size, is_32b_trailer); 
     }
 }
 
@@ -206,7 +203,6 @@ FelixCardReader::get_info(opmonlib::InfoCollector& ci, int level)
     }
 }
 
-} // namespace flxlibs
-} // namespace dunedaq
+} // namespace dunedaq::flxlibs
 
 DEFINE_DUNE_DAQ_MODULE(dunedaq::flxlibs::FelixCardReader)

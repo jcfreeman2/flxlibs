@@ -29,10 +29,9 @@ enum
   TLVL_BOOKKEEPING = 15
 };
 
-namespace dunedaq {
-namespace flxlibs {
+namespace dunedaq::flxlibs {
 
-CardControllerWrapper::CardControllerWrapper(uint32_t device_id) : m_device_id(device_id)
+  CardControllerWrapper::CardControllerWrapper(uint32_t device_id) : m_device_id(device_id) // NOLINT
 {
   TLOG_DEBUG(TLVL_ENTER_EXIT_METHODS)
     << "CardControllerWrapper constructor called. Open card " << m_device_id;
@@ -68,7 +67,7 @@ CardControllerWrapper::init() {
  m_flx_card->cfg_set_option(BF_GBT_SOFT_RESET, 0xFFFFFFFFFFFF);
  m_flx_card->cfg_set_option(BF_GBT_SOFT_RESET, 0);
 
- int bad_channels = m_flx_card->gbt_setup( FLX_GBT_ALIGNMENT_ONE, FLX_GBT_TMODE_FEC ); //What does this do?
+ int bad_channels = m_flx_card->gbt_setup( FLX_GBT_ALIGNMENT_ONE, FLX_GBT_TMODE_FEC ); // NOLINT // What does this do? 
  if(bad_channels) {
     TLOG()<< bad_channels << " not aligned.";
  }
@@ -98,8 +97,7 @@ CardControllerWrapper::configure(const felixcardcontroller::LogicalUnit & lu_cfg
     set_bitfield("GBT_TOHOST_FANOUT_SEL", 0xffffff);
     set_bitfield("FE_EMU_ENA_EMU_TOFRONTEND", 0);
     set_bitfield("FE_EMU_ENA_EMU_TOHOST", 1);
-  }
-  else {
+  } else {
     //set_register("FE_EMU_LOGIC_ENA", 0);
     //set_register("FE_EMU_LOGIC_L1A_TRIGGERED", 0);
     //set_register("FE_EMU_LOGIC_IDLES", 0);
@@ -152,7 +150,7 @@ CardControllerWrapper::close_card()
 }
 
 uint64_t // NOLINT(build/unsigned)
-CardControllerWrapper::get_register(std::string key)
+CardControllerWrapper::get_register(const std::string& key)
 {
   TLOG_DEBUG(TLVL_WORK_STEPS) << "Reading value of register " << key;
   const std::lock_guard<std::mutex> lock(m_card_mutex);
@@ -161,7 +159,7 @@ CardControllerWrapper::get_register(std::string key)
 }
 
 void
-CardControllerWrapper::set_register(std::string key, uint64_t value) // NOLINT(build/unsigned)
+CardControllerWrapper::set_register(const std::string& key , uint64_t value) // NOLINT(build/unsigned)
 {
   TLOG_DEBUG(TLVL_WORK_STEPS) << "Setting value of register " << key << " to " << value;
   const std::lock_guard<std::mutex> lock(m_card_mutex);
@@ -169,7 +167,7 @@ CardControllerWrapper::set_register(std::string key, uint64_t value) // NOLINT(b
 }
 
 uint64_t // NOLINT(build/unsigned)
-CardControllerWrapper::get_bitfield(std::string key)
+CardControllerWrapper::get_bitfield(const std::string& key)
 {
   TLOG_DEBUG(TLVL_WORK_STEPS) << "Reading value of bitfield " << key;
   const std::lock_guard<std::mutex> lock(m_card_mutex);
@@ -178,7 +176,7 @@ CardControllerWrapper::get_bitfield(std::string key)
 }
 
 void
-CardControllerWrapper::set_bitfield(std::string key, uint64_t value) // NOLINT(build/unsigned)
+CardControllerWrapper::set_bitfield(const std::string& key, uint64_t value) // NOLINT(build/unsigned)
 {
   TLOG_DEBUG(TLVL_WORK_STEPS) << "Setting value of bitfield " << key << " to " << value;;
   const std::lock_guard<std::mutex> lock(m_card_mutex);
@@ -195,5 +193,4 @@ CardControllerWrapper::gth_reset()
   }    
 }
 
-} // namespace flxlibs
-} // namespace dunedaq
+} // namespace dunedaq::flxlibs

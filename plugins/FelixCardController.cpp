@@ -37,8 +37,7 @@ enum
   TLVL_BOOKKEEPING = 15
 };
 
-namespace dunedaq {
-namespace flxlibs {
+namespace dunedaq::flxlibs {
 
 FelixCardController::FelixCardController(const std::string& name)
   : DAQModule(name)
@@ -63,8 +62,8 @@ void
 FelixCardController::do_configure(const data_t& args)
 {
   m_cfg = args.get<felixcardcontroller::Conf>();
-  for (auto lu : m_cfg.logical_units) {
-     uint32_t id = m_cfg.card_id+lu.log_unit_id;
+  for (auto& lu : m_cfg.logical_units) {
+    uint32_t id = m_cfg.card_id+lu.log_unit_id; // NOLINT
      m_card_wrappers.emplace(std::make_pair(id,std::make_unique<CardControllerWrapper>(id)));
      if(m_card_wrappers.size() == 1) {
 	 // Do the init only for the first device (whole card)
@@ -77,9 +76,9 @@ FelixCardController::do_configure(const data_t& args)
 void
 FelixCardController::get_info(opmonlib::InfoCollector& ci, int /*level*/)
 {
-  for (auto lu : m_cfg.logical_units) {
-     uint32_t id = m_cfg.card_id+lu.log_unit_id;
-     uint64_t aligned = m_card_wrappers.at(id)->get_register(REG_GBT_ALIGNMENT_DONE);
+  for (const auto& lu : m_cfg.logical_units) {
+    uint32_t id = m_cfg.card_id+lu.log_unit_id; // NOLINT
+    uint64_t aligned = m_card_wrappers.at(id)->get_register(REG_GBT_ALIGNMENT_DONE); // NOLINT
      for( auto li : lu.links) {
 	felixcardcontrollerinfo::LinkInfo info;
 	info.device_id = id;
@@ -100,7 +99,7 @@ FelixCardController::get_reg(const data_t& args)
 {
   auto conf = args.get<felixcardcontroller::GetRegisters>();
   auto id = conf.card_id + conf.log_unit_id;
-  for (auto reg_name : conf.reg_names) {
+  for (const auto& reg_name : conf.reg_names) {
     auto reg_val = m_card_wrappers.at(id)->get_register(reg_name);
     TLOG() << reg_name << "        0x" << std::hex << reg_val;
   }
@@ -112,7 +111,7 @@ FelixCardController::set_reg(const data_t& args)
   auto conf = args.get<felixcardcontroller::SetRegisters>();
   auto id = conf.card_id + conf.log_unit_id;
 
-  for (auto p : conf.reg_val_pairs) {
+  for (const auto& p : conf.reg_val_pairs) {
     m_card_wrappers.at(id)->set_register(p.reg_name, p.reg_val);
   }
 }
@@ -123,7 +122,7 @@ FelixCardController::get_bf(const data_t& args)
   auto conf = args.get<felixcardcontroller::GetBFs>();
   auto id = conf.card_id + conf.log_unit_id;
 
-  for (auto bf_name : conf.bf_names) {
+  for (const auto& bf_name : conf.bf_names) {
     auto bf_val = m_card_wrappers.at(id)->get_bitfield(bf_name);
     TLOG() << bf_name << "        0x" << std::hex << bf_val;
   }
@@ -135,7 +134,7 @@ FelixCardController::set_bf(const data_t& args)
   auto conf = args.get<felixcardcontroller::SetBFs>();
   auto id = conf.card_id + conf.log_unit_id;
 
-  for (auto p : conf.bf_val_pairs) {
+  for (const auto& p : conf.bf_val_pairs) {
     m_card_wrappers.at(id)->set_bitfield(p.reg_name, p.reg_val);
   }
 }
@@ -147,7 +146,6 @@ FelixCardController::gth_reset(const data_t& /*args*/)
   m_card_wrappers.begin()->second->gth_reset();
 }
 
-} // namespace flxlibs
-} // namespace dunedaq
+} // namespace dunedaq::flxlibs
 
 DEFINE_DUNE_DAQ_MODULE(dunedaq::flxlibs::FelixCardController)

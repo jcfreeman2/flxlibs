@@ -15,8 +15,7 @@
 
 using namespace std::chrono_literals;
 
-namespace dunedaq {
-namespace flxlibs {
+namespace dunedaq::flxlibs {
 
 DefaultParserImpl::DefaultParserImpl()
 {
@@ -105,5 +104,5 @@ DefaultParserImpl::block_processed_with_error(const felix::packetformat::block& 
   m_stats.error_block_ctr++;
 }
 
-} // namespace flxlibs
-} // namespace dunedaq
+} // namespace dunedaq::flxlibs
+

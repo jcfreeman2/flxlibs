@@ -75,10 +75,9 @@ main(int /*argc*/, char** /*argv[]*/)
   // Implement how block addresses should be handled
   std::function<void(uint64_t)> count_block_addr = [&](uint64_t block_addr) { // NOLINT
     ++block_counter;
-    const auto* block = const_cast<felix::packetformat::block*>(
-      felix::packetformat::block_from_bytes(reinterpret_cast<const char*>(block_addr)) // NOLINT
+    const auto* block = felix::packetformat::block_from_bytes(reinterpret_cast<const char*>(block_addr) // NOLINT
     );
-    auto elink = block->elink;
+    auto elink = static_cast<int>(block->elink);
     if (elinks.count(elink) != 0) {
       if (elinks[elink]->queue_in_block_address(block_addr)) {
         // queued block

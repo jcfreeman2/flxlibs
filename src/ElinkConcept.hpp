@@ -20,24 +20,19 @@
 #include <sstream>
 #include <string>
 
-namespace dunedaq {
-namespace flxlibs {
+namespace dunedaq::flxlibs {
 
 class ElinkConcept
 {
 public:
   ElinkConcept()
     : m_parser_impl()
-    , m_card_id(0)
-    , m_logical_unit(0)
-    , m_link_id(0)
-    , m_link_tag(0)
     , m_elink_str("")
     , m_elink_source_tid("")
   {
     m_parser = std::make_unique<felix::packetformat::BlockParser<DefaultParserImpl>>(m_parser_impl);
   }
-  ~ElinkConcept() {}
+  virtual ~ElinkConcept() {};
 
   ElinkConcept(const ElinkConcept&) = delete;            ///< ElinkConcept is not copy-constructible
   ElinkConcept& operator=(const ElinkConcept&) = delete; ///< ElinkConcept is not copy-assginable
@@ -83,10 +78,10 @@ protected:
   DefaultParserImpl m_parser_impl;
   std::unique_ptr<felix::packetformat::BlockParser<DefaultParserImpl>> m_parser;
 
-  int m_card_id;
-  int m_logical_unit;
-  int m_link_id;
-  int m_link_tag;
+  int m_card_id = 0;
+  int m_logical_unit = 0;
+  int m_link_id = 0;
+  int m_link_tag = 0;
   std::string m_elink_str;
   std::string m_opmon_str;
   std::string m_elink_source_tid;
@@ -95,7 +90,6 @@ protected:
 private:
 };
 
-} // namespace flxlibs
-} // namespace dunedaq
+} // namespace dunedaq::flxlibs
 
 #endif // FLXLIBS_SRC_ELINKCONCEPT_HPP_

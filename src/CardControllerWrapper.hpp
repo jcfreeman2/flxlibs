@@ -27,7 +27,7 @@ public:
   /**
    * @brief CardControllerWrapper Constructor
    */
-  CardControllerWrapper(uint32_t device_id);
+  CardControllerWrapper(uint32_t device_id); // NOLINT
   ~CardControllerWrapper();
   CardControllerWrapper(const CardControllerWrapper&) = delete;            ///< Not copy-constructible
   CardControllerWrapper& operator=(const CardControllerWrapper&) = delete; ///< Not copy-assignable
@@ -38,10 +38,10 @@ public:
   void init();
   void configure(const felixcardcontroller::LogicalUnit & lu_cfg);
 
-  uint64_t get_register(std::string key);             // NOLINT(build/unsigned)
-  void set_register(std::string key, uint64_t value); // NOLINT(build/unsigned)
-  uint64_t get_bitfield(std::string key);             // NOLINT(build/unsigned)
-  void set_bitfield(std::string key, uint64_t value); // NOLINT(build/unsigned)
+  uint64_t get_register(const std::string& key);             // NOLINT(build/unsigned)
+  void set_register(const std::string& key, uint64_t value); // NOLINT(build/unsigned)
+  uint64_t get_bitfield(const std::string& key);             // NOLINT(build/unsigned)
+  void set_bitfield(const std::string& key, uint64_t value); // NOLINT(build/unsigned)
   void gth_reset();
 
 private:
@@ -51,7 +51,7 @@ private:
   void close_card();
 
   // Card object
-  uint32_t m_device_id;
+  uint32_t m_device_id;  // NOLINT(build/unsigned)
   using UniqueFlxCard = std::unique_ptr<FlxCard>;
   UniqueFlxCard m_flx_card;
   std::mutex m_card_mutex;
